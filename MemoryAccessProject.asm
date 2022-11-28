@@ -1,4 +1,4 @@
-##### CS286 Project 3 by Caleb Sutton 800707877#####
+###Memory Access Project by Caleb Sutton###
 
 .data
 # VMT Size *********************************************************
@@ -1096,19 +1096,19 @@ main:
 #t1 = VMT size
 #t2 = Base address of target seg
 #t3 = limit of target seg
-#t4 =
+#t4 = free
 #t5 = physical memory address
 #t6 = holds address for seg table
 #t7 = holds address for vmt
-#s0
+#s0 = free
 #s1 = target virtual memory address
 #s2 = v page num
 #s3 = phys page num
 #s4 = valid flag
-#s5 
+#s5 = free
 #s6 = vmem page offset
 #s7 = starting mem address
-#a0
+#a0 = don't use
 #a1 = target segment
 #a2 = target offset
 #a3 = VMT page size
@@ -1255,18 +1255,20 @@ summary:
 
 segtabledisplay:
 	
-	mul $s0, $a1, 2
-	mul $t4, $s0, 4
-	add $t4, $t6, $t4
-	lw $t2, ($t4)
+	mul $s0, $a1, 2		###calculates the address for the base address on the seg table
+	mul $t4, $s0, 4		###calculates the address for the base address on the seg table
+	add $t4, $t6, $t4	###points t4 to the base address address
+	lw $t2, ($t4)		###loads t2 with base adress value
 	
-	add $t4, $t4, 4
-	lw $t3, ($t4)
+	add $t4, $t4, 4		###takes one step to get the limit address
+	lw $t3, ($t4)		###loads t3 with limit value
 
+	###DISPLAY BASE ADDRESS OF TARGET SEGMENT MSG
 	li $v0, 4
 	la $a0, STR_MESSAGE30
 	syscall
 	
+	###DISPLAY BASE ADDRESS OF TARGET SEGMENT
 	li $v0, 1
 	move $a0, $t2
 	syscall
@@ -1276,10 +1278,12 @@ segtabledisplay:
 	la $a0, STR_MESSAGE0 
 	syscall
 
+	###DISPLAY LIMIT SIZE OF SEGMENT MSG
 	li $v0, 4
 	la $a0, STR_MESSAGE31
 	syscall
 	
+	###DISPLAY LIMIT SIZE MSG
 	li $v0, 1
 	move $a0, $t3
 	syscall
@@ -1288,17 +1292,19 @@ segtabledisplay:
 	li $v0, 4
 	la $a0, STR_MESSAGE0 
 	syscall
+	
+	
+	add $s0, $t2, $t3 ###CALCULATE MAXIMUM SEGMENT ADDRESS
+	add $s1, $t2, $a2 ###CALCULATE ATTEMPTED SEGMENT ADDRESS
 
-	add $s0, $t2, $t3
-	add $s1, $t2, $a2
-
+	###DETERMINE IF THERE IS A SEG FAULT
 	blt $s1, $s0, segfaultneg
 	bgt $s1, $s0, segfaultpos
 
 segfaultpos:
 
 	li $v0, 4
-	la $a0, STR_MESSAGE4
+	la $a0, STR_MESSAGE4	###SEG FAULT ENDS PROCESS
 	syscall
 	
 	j end
@@ -1316,12 +1322,13 @@ segfaultneg:
 	j vir
 
 vir:
-
+	###DISPLAY TARGET VIRTUAL MEMORY ADDRESS MSG
 	div $s2, $s1, $a3
 	li $v0, 4
 	la $a0, STR_MESSAGE32
 	syscall
 
+	###DISPLAY TARGET VIRTUAL MEMORY ADDRESS VALUE
 	li $v0, 1
 	move $a0, $s1
 	syscall
@@ -1330,11 +1337,13 @@ vir:
 	li $v0, 4
 	la $a0, STR_MESSAGE0 
 	syscall
-
+	
+	###DISPLAY VIRTUAL PAGE NUMBER MEMORY
 	li $v0, 4
 	la $a0, STR_MESSAGE33
 	syscall
 
+	###DISPLAY VIRTUAL PAGE NUMBER VALUE
 	li $v0, 1
 	move $a0, $s2
 	syscall
@@ -1344,18 +1353,21 @@ vir:
 	la $a0, STR_MESSAGE0 
 	syscall
 
-	mul $s0, $s2, 2
-	mul $t4, $s0, 4
-	add $t4, $t7, $t4
-	lw $s3, ($t4)
 	
-	add $t4, $t4, 4
-	lw $s4, ($t4)
+	mul $s0, $s2, 2	###calculate address for the physical page number on the VMT
+	mul $t4, $s0, 4 ###calculate address for the physical page number on the VMT
+	add $t4, $t7, $t4 ###point t4 at the physical page number address
+	lw $s3, ($t4) 	###load physical page number value into s3
 	
+	add $t4, $t4, 4	###take one step in the table to get valid flag address
+	lw $s4, ($t4)	###load valid flag value into s4
+	
+	###DISPLAY PHYSICAL PAGE NUMBER MSG
 	li $v0, 4
 	la $a0, STR_MESSAGE34
 	syscall
 
+	###DISPLAY PHYSICAL PAGE NUMBER VALUE
 	li $v0, 1
 	move $a0, $s3
 	syscall
@@ -1365,10 +1377,12 @@ vir:
 	la $a0, STR_MESSAGE0 
 	syscall
 
+	###DISPLAY VALID FLAG MSG
 	li $v0, 4
 	la $a0, STR_MESSAGE35
 	syscall
 
+	###DISPLAY VALID FLAG VALUE
 	li $v0, 1
 	move $a0, $s4
 	syscall
@@ -1377,15 +1391,16 @@ vir:
 	li $v0, 4
 	la $a0, STR_MESSAGE0 
 	syscall
-
+	
+	###DETERMINE IF THERE IS A PAGE FAULT
 	beq $s4, 0, pagefaultpos
 	beq $s4, 1, phys
 
 pagefaultpos:
 	
 	li $v0, 4
-	la $a0, STR_MESSAGE8
-	syscall
+	la $a0, STR_MESSAGE8	###page fault isn't lethal so we can allow the program to carry on
+	syscall			###in a real computer system, the processor would fix a page fault by making space for the data but we don't do that here
 	
 	###newline
 	li $v0, 4
@@ -1393,14 +1408,16 @@ pagefaultpos:
 	syscall
 
 phys:
-	rem $s6, $s1, $a3
-	mul $s7, $a3, $s3
-	add $t5, $s6, $s7
+	rem $s6, $s1, $a3 ###calculate offset address for virtual memory page
+	mul $s7, $a3, $s3 ###calculate target starting physical memory page
+	add $t5, $s6, $s7 ###calculate physical memory address
 
+	###DISPLAY VIRTUAL OFFSET MSG
 	li $v0, 4
 	la $a0, STR_MESSAGE37
 	syscall
 
+	###DISPLAY VIRTUAL OFFSET VALUE
 	li $v0, 1
 	move $a0, $s6
 	syscall
@@ -1410,10 +1427,12 @@ phys:
 	la $a0, STR_MESSAGE0 
 	syscall
 
+	###DISPLAY PHYSICAL MEMORY PAGE STARTING ADDRESS MSG
 	li $v0, 4
 	la $a0, STR_MESSAGE36
 	syscall
 
+	###DISPLAY PHYSICAL MEMORY PAGE STARTING ADDRESS VALUE
 	li $v0, 1
 	move $a0, $s7
 	syscall 
@@ -1423,10 +1442,12 @@ phys:
 	la $a0, STR_MESSAGE0 
 	syscall
 	
+	###DISPLAY PHYSICAL MEMORY ADDRESS MSG
 	li $v0, 4
 	la $a0, STR_MESSAGE11
 	syscall
 
+	###DISLAY PHYSICAL MEMORY ADDRESS VALUE
 	li $v0, 1
 	move $a0, $t5
 	syscall
@@ -1436,6 +1457,7 @@ phys:
 	la $a0, STR_MESSAGE0 
 	syscall
 
+	###DISPLAY END PROCESS MSG
 	li $v0,4
 	la $a0, STR_MESSAGE12
 	syscall
